@@ -1,0 +1,115 @@
+description = 'SOAP Client Example using CXF JAX-WS Dispatch and JAXB'
+
+group = 'weblog.soap.client.example'
+version = '1.0-SNAPSHOT'
+
+
+apply plugin : 'java'
+apply plugin : 'maven'
+
+libraries = [
+        junit: 'junit:junit:4.7',
+        cxf: ['org.apache.cxf:cxf-rt-frontend-jaxws:2.7.8',
+                'org.apache.cxf:cxf-rt-transports-http:2.7.8']
+]
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+configurations {
+    provided
+}
+
+sourceSets {
+    main.compileClasspath += configurations.provided
+    test.compileClasspath += configurations.provided
+    test.runtimeClasspath += configurations.provided
+}
+
+jar {
+    destinationDir = file("${buildDir}/output")
+}
+
+test {
+    afterTest { desc, result ->
+        println "Executing test ${desc.name} [${desc.className}] with result: ${result.resultType}"
+    }
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives sourcesJar
+}
+
+println "Building ${project.name} ($version) with Gradle [${project.gradle.gradleVersion}], Java [${System.getProperty('java.version')}]"
+
+sourceSets.main.java.srcDirs "src/generated-sources/java"
+sourceSets.main.resources.excludes = ['wsdl.xml']
+
+configurations {
+    jaxb
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: '*.jar')
+    compile libraries.cxf
+    testCompile libraries.junit
+    jaxb(
+            'com.sun.xml.bind:jaxb-xjc:2.2.7'
+    )
+}
+
+task jaxb() {
+    jaxbTargetDir = file( "src/generated-sources/java" )
+
+    doLast {
+        jaxbTargetDir.mkdirs()
+
+
+        ant.taskdef(
+                name: 'xjc',
+                classname: 'com.sun.tools.xjc.XJCTask',
+                classpath: configurations.jaxb.asPath
+        )
+        ant.jaxbTargetDir = jaxbTargetDir
+
+
+        ant.xjc(
+                destdir: '${jaxbTargetDir}',
+                package: 'weblog.soap.client.example.model',
+                schema: 'src/main/resources/wsdl.xml'
+        ) {
+            arg(value: "-wsdl")
+        }
+    }
+}
+
+compileJava.dependsOn jaxb
+
+jar << {
+    new File(jar.destinationDir.path, "build-info.txt").withWriter {
+        out ->
+            out.writeLine("Project Name: ${project.name}")
+            out.writeLine("Project Version: ${project.version}")
+            out.writeLine("Build Time: " + new Date())
+    }
+}
+
+jar << {
+    copy {
+        from(sourceSets.main.resources)
+        into jar.destinationDir
+    }
+    copy {
+        from configurations.compile
+        into jar.destinationDir.path + '/libs'
+    }
+}
+
+clean.delete "src/generated-sources"
