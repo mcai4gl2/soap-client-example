@@ -2,13 +2,11 @@ package weblog.soap.client.example;
 
 import weblog.soap.client.example.model.GetWeatherInformation;
 import weblog.soap.client.example.model.GetWeatherInformationResponse;
-import weblog.soap.client.example.model.ObjectFactory;
 import weblog.soap.client.example.model.WeatherDescription;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.namespace.QName;
 import javax.xml.ws.Dispatch;
-import javax.xml.ws.EndpointReference;
 import javax.xml.ws.Service;
 import java.net.URL;
 
@@ -27,8 +25,6 @@ public class TestClient {
                 Service.Mode.PAYLOAD);
 
         dispatch.getRequestContext().put("find.dispatch.operation", Boolean.TRUE);
-
-        ObjectFactory factory = new ObjectFactory();
 
         GetWeatherInformation input = new GetWeatherInformation();
 
